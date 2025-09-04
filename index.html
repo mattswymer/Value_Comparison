@@ -90,11 +90,23 @@
 
     .navbar{
       position:sticky; bottom:0; z-index:10; background:var(--bg); border-top:1px solid var(--border); padding:.75rem 1rem;
-      display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:.5rem;
+      display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:.5rem;
     }
     .navbar .right{ text-align:right; }
 
     .hidden{ display:none !important; }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
 
     .summary h2{ margin-top:0; }
     .summary .pair{ padding:.75rem 1rem; border:1px solid var(--border); border-radius:10px; margin-bottom:.75rem; background:var(--card); }
@@ -114,9 +126,8 @@
     }
     @media (max-width:840px){
       .inputs{ grid-template-columns:1fr; }
-      .choices{ grid-template-columns:1fr 1fr; } /* Two columns for images on mobile */
-      .navbar{ grid-template-columns:1fr 1fr; } /* Adjusted for two buttons */
-      .navbar .right{ text-align:right; }
+      .choices{ grid-template-columns:1fr 1fr; }
+      .navbar{ grid-template-columns:1fr 1fr; }
       .grid-2{ grid-template-columns:1fr; }
     }
   </style>
@@ -293,7 +304,7 @@
     const pairs = items.map((it, i) => ({
       id:`pair-${i+1}`,
       left:{ title:it.left?.name ?? `Item ${i+1}A`, img:it.left?.image ?? null, emoji:it.left?.emoji ?? '' },
-      right:{ title:it.right?.name ?? `Item ${i+1}B`, img:it.right?.image ?? null, emoji:it.right?.emoji ?? '' }
+      right:{ title:it.right?.name ?? `Item i+1}B`, img:it.right?.image ?? null, emoji:it.right?.emoji ?? '' }
     }));
     const TOTAL_PAIRS = pairs.length;
     const STORAGE_KEY = 'value-comparisons.v7'; // Bumped version to avoid old cache issues
