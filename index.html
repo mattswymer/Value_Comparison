@@ -64,25 +64,14 @@
     .choice:hover{ border-color:var(--accent); }
     .choice input[type="radio"]{ position:absolute; inset:0; opacity:0; }
 
-    /* === Uniform frame + RESIZE (no crop, no distortion) === */
     .choice__img{
-      aspect-ratio: 4 / 3; /* change to 1 / 1 or 16 / 9 if you prefer */
-      width: 100%; border-radius:10px;
-      background:var(--fill);
-      border:1px dashed var(--border);
-
-      display:flex;           /* center the image */
-      align-items:center;
-      justify-content:center;
-
-      overflow:visible; /* allow full image; we cap the img itself */
+      aspect-ratio: 4 / 3; width: 100%; border-radius:10px;
+      background:var(--fill); border:1px dashed var(--border);
+      display:flex; align-items:center; justify-content:center;
+      overflow:visible;
     }
     .choice__img img{
-      width:auto; /* preserve intrinsic ratio */
-      height:auto;
-      max-width:100%; /* scale down to fit the frame */
-      max-height:100%;
-      object-fit:contain; /* safety net */
+      width:auto; height:auto; max-width:100%; max-height:100%; object-fit:contain;
     }
 
     .choice__caption{ color:var(--subtle); font-size:.95rem; min-height:1.25rem; line-height:1.25rem; }
@@ -125,9 +114,9 @@
     }
     @media (max-width:840px){
       .inputs{ grid-template-columns:1fr; }
-      .choices{ grid-template-columns:1fr; }
-      .navbar{ grid-template-columns:1fr; grid-auto-rows:auto; }
-      .navbar .right{ text-align:left; }
+      .choices{ grid-template-columns:1fr 1fr; } /* Two columns for images on mobile */
+      .navbar{ grid-template-columns:1fr 1fr; } /* Adjusted for two buttons */
+      .navbar .right{ text-align:right; }
       .grid-2{ grid-template-columns:1fr; }
     }
   </style>
@@ -255,7 +244,6 @@
 
   <nav class="navbar" aria-label="Navigation">
     <div><button id="prevBtn" class="btn" type="button">← Previous</button></div>
-    <div style="text-align:center;"><button id="saveBtn" class="btn btn-primary" type="button" disabled>Save</button></div>
     <div class="right"><button id="nextBtn" class="btn btn-primary" type="button" disabled>Save &amp; Next →</button></div>
   </nav>
 
@@ -308,7 +296,7 @@
       right:{ title:it.right?.name ?? `Item ${i+1}B`, img:it.right?.image ?? null, emoji:it.right?.emoji ?? '' }
     }));
     const TOTAL_PAIRS = pairs.length;
-    const STORAGE_KEY = 'value-comparisons.v6';
+    const STORAGE_KEY = 'value-comparisons.v7'; // Bumped version to avoid old cache issues
 
     /** @typedef {{choice:('left'|'right'|null), leftPrice:string, leftUrl:string, rightPrice:string, rightUrl:string}} PairAnswer */
     const defaultAnswer = () => ({ choice:null, leftPrice:'', leftUrl:'', rightPrice:'', rightUrl:'' });
@@ -318,7 +306,7 @@
     const $ = (s)=>document.querySelector(s);
     const itemsView=$('#itemsView'), summaryView=$('#summaryView'), navbar=$('.navbar');
     const startResumeBtn=$('#startResumeBtn'), summaryBtn=$('#summaryBtn'), resetBtn=$('#resetBtn'), resetBtn2=$('#resetBtn2'), toItemsBtn=$('#toItemsBtn');
-    const prevBtn=$('#prevBtn'), saveBtn=$('#saveBtn'), nextBtn=$('#nextBtn');
+    const prevBtn=$('#prevBtn'), nextBtn=$('#nextBtn');
     const studentNameInput=$('#studentName'), workDateInput=$('#workDate');
     const pairTitle=$('#pairTitle'), progressBar=$('#progressBar'), progressTxt=$('#progressText');
     const choicesWrap=document.querySelector('.choices'), validationEl=$('#validation');
@@ -339,7 +327,6 @@
       state={ currentIndex:0, answers:{}, meta:{ studentName:'', date:'' } }; try{ localStorage.removeItem(STORAGE_KEY); }catch{}; lastSavedJSON=''; render();
     }
 
-    // Keep field blank unless it contains digits
     function parsePrice(raw){
       if(raw==null) return '';
       const cleaned=String(raw).replace(/[^\d.\-]/g,'').replace(/(?!^)-/g,'');
@@ -414,8 +401,7 @@
       inputsBlock.classList.toggle('inputs--hidden',!current.choice);
 
       const pairValid=validatePair(current);
-      saveBtn.disabled=!pairValid; nextBtn.disabled=!pairValid;
-      // Last-step label
+      nextBtn.disabled=!pairValid;
       nextBtn.textContent = (state.currentIndex===TOTAL_PAIRS-1) ? 'Save & Summary' : 'Save & Next →';
       prevBtn.disabled=state.currentIndex===0;
 
@@ -434,12 +420,12 @@
 
       validationEl.textContent=''; validationEl.className='validation';
       if(msgs.length){ validationEl.classList.add('validation--error'); validationEl.textContent=msgs.join(' '); }
-      else{ validationEl.classList.add('validation--ok'); validationEl.textContent='Looks good. You can Save or ' + ((state.currentIndex===TOTAL_PAIRS-1)?'Save & Summary.':'Save & Next.'); }
+      else{ validationEl.classList.add('validation--ok'); validationEl.textContent='Looks good. You can ' + ((state.currentIndex===TOTAL_PAIRS-1)?'Save & Summary.':'Save & Next.'); }
     }
 
     function renderSummary(){
       itemsView.classList.add('hidden'); summaryView.classList.remove('hidden');
-      navbar.classList.add('hidden'); // hide footer on summary
+      navbar.classList.add('hidden');
 
       summaryStudent.textContent=state.meta.studentName||'—';
       summaryDate.textContent=state.meta.date||'—';
@@ -477,13 +463,11 @@
     resetBtn2?.addEventListener('click',resetAll);
 
     prevBtn.addEventListener('click',()=>go(-1));
-    saveBtn.addEventListener('click',()=>{ persist(); });
     nextBtn.addEventListener('click',()=>{ persist(); if(state.currentIndex>=TOTAL_PAIRS-1) renderSummary(); else go(1); });
 
-    // Choice selection
     choicesWrap.addEventListener('click',(e)=>{ const label=e.target.closest('.choice'); if(!label) return; const side=label.getAttribute('data-side'); if(side!=='left'&&side!=='right')return; setAnswer({choice:side}); render(); setTimeout(()=>{ (side==='left'?leftPrice:rightPrice).focus({preventScroll:true}); },0); });
     choicesWrap.addEventListener('keydown',(e)=>{ if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight') return; e.preventDefault(); const curr=(state.answers[pairs[state.currentIndex].id]||defaultAnswer()).choice; const next=e.key==='ArrowLeft'?'left':'right'; if(curr!==next){ setAnswer({choice:next}); render(); } });
-    // Live validation + smart URL while typing
+    
     document.addEventListener('input',(e)=>{
       const t=e.target; if(!(t instanceof HTMLInputElement)) return;
       if(t===studentNameInput){ setMeta({studentName:t.value.trim()}); return; }
@@ -500,14 +484,13 @@
       }
 
       const after=state.answers[id]||curr; const valid=validatePair(after);
-      updateValidation(after,pairs[state.currentIndex]); saveBtn.disabled=!valid; nextBtn.disabled=!valid;
+      updateValidation(after,pairs[state.currentIndex]); nextBtn.disabled=!valid;
 
       const {complete,pct}=completion(); const idx=state.currentIndex+1;
       progressTxt.textContent=`Pair ${idx} of ${TOTAL_PAIRS} • Completed ${complete} of ${TOTAL_PAIRS} • ${pct}% complete`;
       progressBar.style.width=pct+'%';
     });
 
-    // Blur: format price ONLY if digits present; normalize URL text in the field
     document.addEventListener('blur',(e)=>{
       const t=e.target; if(!(t instanceof HTMLInputElement)) return;
 
@@ -519,7 +502,7 @@
         const normalized=normalizeUrlInput(t.value); if(normalized!==t.value) t.value=normalized;
         if(t===leftUrl) setAnswer({leftUrl:normalized}); else setAnswer({rightUrl:normalized});
         const after=state.answers[pairs[state.currentIndex].id]||defaultAnswer(); const valid=validatePair(after);
-        updateValidation(after,pairs[state.currentIndex]); saveBtn.disabled=!valid; nextBtn.disabled=!valid;
+        updateValidation(after,pairs[state.currentIndex]); nextBtn.disabled=!valid;
       }
     },true);
     window.addEventListener('beforeunload',(e)=>{ try{ const json=JSON.stringify(state); if(json!==lastSavedJSON){ e.preventDefault(); e.returnValue=''; } }catch{} });
