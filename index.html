@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Value Comparisons</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <style>
+    :root{
+      --bg:#fff; --fg:#0f172a; --subtle:#475569; --muted:#94a3b8; --border:#e5e7eb;
+      --fill:#f8fafc; --accent:#2563eb; --accent-weak:#dbeafe; --danger:#b91c1c;
+      --ok:#16a34a; --focus:#1d4ed8; --card:#fff; --shadow:0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.06); }
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg:#0b1220; --fg:#e5e7eb; --subtle:#cbd5e1; --muted:#94a3b8; --border:#1f2937;
+        --fill:#111827; --accent:#60a5fa; --accent-weak:#0b2942; --danger:#f87171; --ok:#34d399; --card:#0f172a; --shadow:none; }
+    }
+    *,*::before,*::after{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{ margin:0; font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"; background:var(--bg); color:var(--fg); }
+    img{ max-width:100%; display:block; }
+    a{ color:var(--accent); text-decoration:none; } a:hover{ text-decoration:underline; }
+
+    .page{ min-height:100dvh; display:grid; grid-template-rows:auto 1fr auto; }
+    header.header{ position:sticky; top:0; z-index:20; background:var(--bg); border-bottom:1px solid var(--border); padding:.75rem 1rem; }
+    .header__row{ display:grid; grid-template-columns:1fr auto; align-items:center; gap:.75rem; }
+    .title{ margin:0; font-size:clamp(1.1rem,2vw+.2rem,1.5rem); letter-spacing:.2px; }
+    .subtitle{ margin:.25rem 0 0 0; color:var(--subtle); font-size:.95rem; }
+    .header__actions{ display:flex; gap:.5rem; flex-wrap:wrap; justify-content:end; }
+
+    main{ padding:1rem; max-width:920px; width:100%; margin:0 auto; }
+    .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+
+    .card{ background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); }
+    .section{ padding:1rem; }
+
+    label{ display:block; font-weight:600; margin-bottom:.25rem; }
+    input[type="text"],input[type="url"],input[type="number"],input[type="date"]{
+      width:100%; background:var(--fill); border:1px solid var(--border); color:var(--fg);
+      padding:.625rem .75rem; border-radius:10px; outline:none; }
+    input:focus{ border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in oklab, var(--focus) 20%, transparent); }
+    .hint{ color:var(--muted); font-size:.9rem; }
+    .row{ display:flex; gap:.75rem; flex-wrap:wrap; align-items:center; }
+
+    .btn{ display:inline-flex; align-items:center; justify-content:center; gap:.5rem; padding:.625rem 1rem;
+      border-radius:10px; border:1px solid var(--border); background:var(--fill); color:var(--fg); cursor:pointer; min-width:8.5rem; font-weight:600; }
+    .btn:hover{ filter:brightness(0.98); }
+    .btn:disabled{ opacity:.5; cursor:not-allowed; }
+    .btn-primary{ background:var(--accent); color:#fff; border-color:color-mix(in oklab, var(--accent) 80%, black); }
+    .btn-danger{ background:color-mix(in oklab, var(--danger) 15%, var(--fill)); color:var(--danger); border-color:color-mix(in oklab, var(--danger) 50%, var(--border)); }
+    .btn-ghost{ background:transparent; border-color:var(--border); }
+
+    .progress{ display:flex; align-items:center; gap:.75rem; margin:.5rem 0 0; }
+    .bar{ flex:1; height:8px; background:var(--border); border-radius:999px; overflow:hidden; }
+    .bar>span{ display:block; height:100%; width:0%; background:var(--accent); transition:width .2s ease; }
+    .progress__text{ color:var(--subtle); font-size:.9rem; }
+
+    fieldset{ border:0; padding:0; margin:0; }
+    .choices{ display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .choice{
+      position:relative; padding:1rem; cursor:pointer; user-select:none; border:1.5px solid var(--border);
+      border-radius:12px; transition:border-color .15s, box-shadow .15s, background .15s; background:var(--card);
+      display:grid; grid-template-rows:auto 1fr auto; gap:.5rem; }
+    .choice:hover{ border-color:var(--accent); }
+    .choice input[type="radio"]{ position:absolute; inset:0; opacity:0; }
+
+    /* === Uniform frame + RESIZE (no crop, no distortion) === */
+    .choice__img{
+      aspect-ratio: 4 / 3; /* change to 1 / 1 or 16 / 9 if you prefer */
+      width: 100%; border-radius:10px;
+      background:var(--fill);
+      border:1px dashed var(--border);
+
+      display:flex;           /* center the image */
+      align-items:center;
+      justify-content:center;
+
+      overflow:visible; /* allow full image; we cap the img itself */
+    }
+    .choice__img img{
+      width:auto; /* preserve intrinsic ratio */
+      height:auto;
+      max-width:100%; /* scale down to fit the frame */
+      max-height:100%;
+      object-fit:contain; /* safety net */
+    }
+
+    .choice__caption{ color:var(--subtle); font-size:.95rem; min-height:1.25rem; line-height:1.25rem; }
+    .choice.selected{ border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in oklab, var(--accent) 20%, transparent);
+      background:color-mix(in oklab, var(--accent-weak) 40%, var(--card)); }
+    .choice:focus-within{ outline:3px solid color-mix(in oklab, var(--focus) 30%, transparent); outline-offset:2px; }
+
+    .inputs-wrap{ min-height:16rem; }
+    .inputs{ margin-top:1rem; display:grid; gap:1rem; grid-template-columns:1fr 1fr; }
+    .inputs .panel{ padding:1rem; }
+    .inputs--hidden{ visibility:hidden; pointer-events:none; }
+    .requirement{ margin-top:.5rem; color:var(--subtle); }
+    .validation{ min-height:1.5rem; font-size:.92rem; }
+    .validation--error{ color:var(--danger); }
+    .validation--ok{ color:var(--ok); }
+
+    .navbar{
+      position:sticky; bottom:0; z-index:10; background:var(--bg); border-top:1px solid var(--border); padding:.75rem 1rem;
+      display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:.5rem;
+    }
+    .navbar .right{ text-align:right; }
+
+    .hidden{ display:none !important; }
+
+    .summary h2{ margin-top:0; }
+    .summary .pair{ padding:.75rem 1rem; border:1px solid var(--border); border-radius:10px; margin-bottom:.75rem; background:var(--card); }
+    .summary .pair__title{ font-weight:700; margin:0 0 .25rem 0; }
+    .summary .pair__body{ display:grid; gap:.5rem; grid-template-columns:1fr 1fr; }
+    .summary .item{ display:flex; flex-direction:column; gap:.2rem; }
+    .summary .name{ font-weight:600; }
+    .summary .name .chosen{ color:var(--accent); font-weight:800; margin-right:.25rem; }
+    .summary .small{ color:var(--muted); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace; font-size:.92rem; }
+
+    @media print{
+      header.header, .navbar, .header__actions, .requirement, .validation, .choices, .inputs-wrap, #itemsView .section>.row, #toItemsBtn { display:none !important; }
+      main{ max-width:unset; padding:0; }
+      .summary{ display:block !important; }
+      @page{ margin:12.7mm; } body{ font-size:11pt; }
+      .summary .pair{ page-break-inside:avoid; }
+    }
+    @media (max-width:840px){
+      .inputs{ grid-template-columns:1fr; }
+      .choices{ grid-template-columns:1fr; }
+      .navbar{ grid-template-columns:1fr; grid-auto-rows:auto; }
+      .navbar .right{ text-align:left; }
+      .grid-2{ grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body class="page">
+  <header class="header">
+    <div class="header__row">
+      <div>
+        <h1 class="title">Value Comparisons</h1>
+        <p class="subtitle">Pick which item costs more, then enter the price and paste a link for <strong>both</strong> items.</p>
+      </div>
+      <div class="header__actions">
+        <button id="startResumeBtn" class="btn btn-primary" type="button">Start</button>
+        <button id="summaryBtn" class="btn btn-ghost" type="button" aria-controls="summaryView">Summary</button>
+        <button id="resetBtn" class="btn btn-danger" type="button">Reset all answers</button>
+      </div>
+    </div>
+    <div class="progress" aria-live="polite">
+      <div class="bar" aria-hidden="true"><span id="progressBar"></span></div>
+      <div id="progressText" class="progress__text">Pair 1 of 18 • Completed 0 of 18 • 0% complete</div>
+    </div>
+  </header>
+
+  <main>
+    <section id="itemsView">
+      <div class="card section">
+        <div class="grid-2">
+          <div>
+            <label for="studentName">Student name</label>
+            <input id="studentName" type="text" placeholder="Your name" autocomplete="name" />
+          </div>
+          <div>
+            <label for="workDate">Date</label>
+            <input id="workDate" type="date" />
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <h2 class="mt-0">Steps</h2>
+          <ol class="mt-1">
+            <li>Select the item you think is more expensive.</li>
+            <li>Enter the price and paste the URL for <em>both</em> items.</li>
+            <li>Open <strong>Summary</strong>, click <strong>Print / Save PDF</strong>, then upload to Canvas.</li>
+          </ol>
+           <p class="hint">Your work saves automatically on this device.</p>
+        </div>
+      </div>
+
+      <div class="card section mt-3" aria-labelledby="pairTitle">
+        <h2 id="pairTitle" class="mb-0">Pair 1 of 18</h2>
+        <p id="pairHelp" class="hint mt-1">Choose the item you think is most expensive.</p>
+
+        <fieldset class="mt-3">
+          <legend class="sr-only">Choose the item you think is most expensive.</legend>
+          <div class="choices" role="radiogroup" aria-labelledby="pairTitle">
+            <label class="choice" data-side="left">
+              <div class="choice__img">
+                <img id="imgLeft" alt="Item A" loading="lazy" decoding="async" referrerpolicy="no-referrer" />
+              </div>
+              <div class="choice__caption" id="capLeft"></div>
+              <input type="radio" name="choice" value="left" />
+            </label>
+
+            <label class="choice" data-side="right">
+              <div class="choice__img">
+                <img id="imgRight" alt="Item B" loading="lazy" decoding="async" referrerpolicy="no-referrer" />
+              </div>
+              <div class="choice__caption" id="capRight"></div>
+              <input type="radio" name="choice" value="right" />
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="inputs-wrap">
+          <div class="inputs inputs--hidden" id="inputs">
+            <div class="panel card">
+              <h3 id="leftTitle" class="mt-0"></h3>
+              <label for="leftPrice">Price (USD)</label>
+              <input id="leftPrice" name="leftPrice" inputmode="decimal" placeholder="$0.00" />
+              <p class="hint mt-1">Enter a non-negative price. You can include “$” and commas.</p>
+
+              <label for="leftUrl" class="mt-3">Product page URL</label>
+              <input id="leftUrl" name="leftUrl" type="url" placeholder="https://example.com/product" />
+            </div>
+
+            <div class="panel card">
+              <h3 id="rightTitle" class="mt-0"></h3>
+              <label for="rightPrice">Price (USD)</label>
+              <input id="rightPrice" name="rightPrice" inputmode="decimal" placeholder="$0.00" />
+              <p class="hint mt-1">Enter a non-negative price. You can include “$” and commas.</p>
+
+              <label for="rightUrl" class="mt-3">Product page URL</label>
+              <input id="rightUrl" name="rightUrl" type="url" placeholder="https://example.com/product" />
+            </div>
+          </div>
+        </div>
+
+        <div class="requirement">Requirement: Enter a price and a valid URL for both items.</div>
+        <div id="validation" class="validation" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section id="summaryView" class="summary hidden">
+      <div class="row">
+        <h2 class="mt-0">Summary</h2>
+        <button id="toItemsBtn" class="btn btn-ghost" type="button">Back to Items</button>
+      </div>
+      <p class="hint">The chosen option is marked with an asterisk (*).</p>
+
+      <div id="summaryHeader" class="card section mt-2">
+        <div class="grid-2">
+          <div><strong>Student:</strong> <span id="summaryStudent">—</span></div>
+          <div><strong>Date:</strong> <span id="summaryDate">—</span></div>
+        </div>
+      </div>
+
+      <div id="summaryList" class="mt-3"></div>
+
+      <div class="summary-actions mt-3">
+        <button class="btn btn-primary" onclick="window.print()">Print / Save PDF</button>
+        <button id="resetBtn2" class="btn btn-danger" type="button">Reset all answers</button>
+      </div>
+    </section>
+  </main>
+
+  <nav class="navbar" aria-label="Navigation">
+    <div><button id="prevBtn" class="btn" type="button">← Previous</button></div>
+    <div style="text-align:center;"><button id="saveBtn" class="btn btn-primary" type="button" disabled>Save</button></div>
+    <div class="right"><button id="nextBtn" class="btn btn-primary" type="button" disabled>Save &amp; Next →</button></div>
+  </nav>
+
+  <script>
+  (() => {
+    "use strict";
+
+    /* ---------------- Data (your items) ---------------- */
+    const items = [
+        { left:{ name:"Microsoft Xbox Series X – 1TB Digital Edition", emoji:"🎮", image:"assets/xbox series x.png" },
+          right:{ name:"Sony PlayStation 5 (PS5) Digital Console Slim", emoji:"🎮", image:"assets/ps5.png" } },
+        { left:{ name:"Mrs. Butterworth’s Pancake Syrup", emoji:"🥞", image:"assets/ms butterworths.webp" },
+          right:{ name:"Log Cabin Original Syrup", emoji:"🥞", image:"assets/log cabin.webp" } },
+        { left:{ name:"Fruit of the Loom Hoodie", emoji:"🧥", image:"assets/fruit of the loom hoodie.jpg" },
+          right:{ name:"Jerzees Hoodie", emoji:"🧥", image:"assets/jerzees hoodie.jpg" } },
+        { left:{ name:"Nike Air Max 270", emoji:"👟", image:"assets/nike air max.avif" },
+          right:{ name:"Adidas Ultraboost", emoji:"👟", image:"assets/adidas ultraboost.webp" } },
+        { left:{ name:"Apple iPhone 16 Pro Max", emoji:"📱", image:"assets/iphone 16 pro max.jpg" },
+          right:{ name:"Samsung Galaxy S25 Ultra", emoji:"📱", image:"assets/samsung s25 ultra.webp" } },
+        { left:{ name:"HP Envy 17.3\" Laptop (Ultra 7-155H, 64GB RAM, 1TB SSD)", emoji:"💻", image:"assets/hp envy.webp" },
+          right:{ name:"15” MacBook Air M4 24 GB RAM 1TB SSD", emoji:"💻", image:"assets/macbook air.jpg" } },
+        { left:{ name:"Uniball Vision Rollerball", emoji:"🖊️", image:"assets/uniball vision.jpg" },
+          right:{ name:"Pilot G2 Premium Gel Roller", emoji:"🖊️", image:"assets/pilot g2.jpg" } },
+        { left:{ name:"Dunkin’ Frozen Chocolate (M)", emoji:"🥤", image:"assets/frozen-chocolate.png" },
+          right:{ name:"Starbucks Double Chocolate Chip Frappuccino (Grande)", emoji:"🥤", image:"assets/chocolate frap.webp" } },
+        { left:{ name:"Fitbit Charge 6", emoji:"⌚", image:"assets/fitbit.jpg" },
+          right:{ name:"Garmin Vivosmart 5", emoji:"⌚", image:"assets/garmin watch.jpg" } },
+        { left:{ name:"Dyson V11 Vacuum", emoji:"🧹", image:"assets/dyson vacuum.jpg" },
+          right:{ name:"Shark Cordless PowerDetect Vacuum", emoji:"🧹", image:"assets/shark vacuum.webp" } },
+        { left:{ name:"SAMSUNG 75\" QLED Q60B Series", emoji:"📺", image:"assets/samsung tv.avif" },
+          right:{ name:"LG 75\" UR9000 Series", emoji:"📺", image:"assets/lg tv.webp" } },
+        { left:{ name:"KitchenAid Stand Mixer", emoji:"🥣", image:"assets/kitchenaid mixer.jpg" },
+          right:{ name:"Cuisinart Stand Mixer", emoji:"🥣", image:"assets/cuisineart mixer.jpg" } },
+        { left:{ name:"Yeti Tundra 45 Cooler", emoji:"🧊", image:"assets/yeti cooler.jpg" },
+          right:{ name:"RTIC 45 Cooler", emoji:"🧊", image:"assets/rtic cooler.webp" } },
+        { left:{ name:"North Face Borealis Commuter Backpack", emoji:"🎒", image:"assets/northface backpack.jpg" },
+          right:{ name:"Osprey Daylite Plus Commuter Backpack", emoji:"🎒", image:"assets/osprey backpack.webp" } },
+        { left:{ name:"HP Envy Printer", emoji:"🖨️", image:"assets/hp envy printer.webp" },
+          right:{ name:"Canon PIXMA Printer", emoji:"🖨️", image:"assets/canon printer.webp" } },
+        { left:{ name:"Levi’s 501 Jeans", emoji:"👖", image:"assets/levis 501.webp" },
+          right:{ name:"Wrangler Original Fit Jeans", emoji:"👖", image:"assets/wrangler jeans.jpg" } },
+        { left:{ name:"Ray-Ban Wayfarer Sunglasses", emoji:"🕶️", image:"assets/rayban sunglasses.avif" },
+          right:{ name:"Oakley Holbrook Sunglasses", emoji:"🕶️", image:"assets/oakley sunglasses.jpg" } },
+        { left:{ name:"Apple Watch Series 10", emoji:"⌚", image:"assets/apple watch.jpg" },
+          right:{ name:"Samsung Galaxy Watch Ultra (2025)", emoji:"⌚", image:"assets/samsung watch.webp" } },
+      ];
+    const pairs = items.map((it, i) => ({
+      id:`pair-${i+1}`,
+      left:{ title:it.left?.name ?? `Item ${i+1}A`, img:it.left?.image ?? null, emoji:it.left?.emoji ?? '' },
+      right:{ title:it.right?.name ?? `Item ${i+1}B`, img:it.right?.image ?? null, emoji:it.right?.emoji ?? '' }
+    }));
+    const TOTAL_PAIRS = pairs.length;
+    const STORAGE_KEY = 'value-comparisons.v6';
+
+    /** @typedef {{choice:('left'|'right'|null), leftPrice:string, leftUrl:string, rightPrice:string, rightUrl:string}} PairAnswer */
+    const defaultAnswer = () => ({ choice:null, leftPrice:'', leftUrl:'', rightPrice:'', rightUrl:'' });
+    let state = { currentIndex:0, answers:{}, meta:{ studentName:'', date:'' } };
+    let lastSavedJSON = '';
+
+    const $ = (s)=>document.querySelector(s);
+    const itemsView=$('#itemsView'), summaryView=$('#summaryView'), navbar=$('.navbar');
+    const startResumeBtn=$('#startResumeBtn'), summaryBtn=$('#summaryBtn'), resetBtn=$('#resetBtn'), resetBtn2=$('#resetBtn2'), toItemsBtn=$('#toItemsBtn');
+    const prevBtn=$('#prevBtn'), saveBtn=$('#saveBtn'), nextBtn=$('#nextBtn');
+    const studentNameInput=$('#studentName'), workDateInput=$('#workDate');
+    const pairTitle=$('#pairTitle'), progressBar=$('#progressBar'), progressTxt=$('#progressText');
+    const choicesWrap=document.querySelector('.choices'), validationEl=$('#validation');
+    const leftPrice=$('#leftPrice'), leftUrl=$('#leftUrl'), rightPrice=$('#rightPrice'), rightUrl=$('#rightUrl');
+    const inputsBlock=$('#inputs');
+    const imgLeft=$('#imgLeft'), imgRight=$('#imgRight'), capLeft=$('#capLeft'), capRight=$('#capRight');
+    const leftTitle=$('#leftTitle'), rightTitle=$('#rightTitle');
+    const summaryStudent=$('#summaryStudent'), summaryDate=$('#summaryDate'), summaryList=$('#summaryList');
+
+    function safeLoad(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return;
+      const p=JSON.parse(raw); if(!p||typeof p!=='object') return;
+      state={ currentIndex:Number.isFinite(p.currentIndex)?p.currentIndex:0, answers:p.answers&&typeof p.answers==='object'?p.answers:{}, meta:p.meta&&typeof p.meta==='object'?{ studentName:p.meta.studentName||'', date:p.meta.date||'' }:{ studentName:'', date:'' } };
+      lastSavedJSON=raw;
+    }catch(e){ console.warn('Load failed',e); } }
+    let saveTimer; function scheduleSave(){ clearTimeout(saveTimer); saveTimer=setTimeout(persist,200); }
+    function persist(){ try{ const json=JSON.stringify(state); localStorage.setItem(STORAGE_KEY,json); lastSavedJSON=json; }catch(e){ console.warn('Save failed',e); } }
+    function resetAll(){ if(!confirm('Reset all answers? This clears saved progress on this device.')) return;
+      state={ currentIndex:0, answers:{}, meta:{ studentName:'', date:'' } }; try{ localStorage.removeItem(STORAGE_KEY); }catch{}; lastSavedJSON=''; render();
+    }
+
+    // Keep field blank unless it contains digits
+    function parsePrice(raw){
+      if(raw==null) return '';
+      const cleaned=String(raw).replace(/[^\d.\-]/g,'').replace(/(?!^)-/g,'');
+      if(!/\d/.test(cleaned)) return '';
+      const n=Number(cleaned);
+      if(!Number.isFinite(n)||n<0) return '';
+      return n.toFixed(2);
+    }
+    function normalizeUrlInput(u){
+      let s=(u||'').trim();
+      if(!s) return '';
+      if(/^https?:\/\//i.test(s)) return s;
+      if(/^\/\//.test(s)) return 'https:'+s;
+      if(/^[\w.-]+\.[a-z]{2,}(?:\/.*)?$/i.test(s)) return 'https://'+s;
+      return s;
+    }
+    function isValidUrl(u){ if(!u||typeof u!=='string') return false;
+      try{ const url=new URL(u); return url.protocol==='http:'||url.protocol==='https:'; }catch{ return false; } }
+    function validatePair(ans){ if(!ans||!ans.choice) return false;
+      const lp=parsePrice(ans.leftPrice), rp=parsePrice(ans.rightPrice);
+      return !!(lp && rp && isValidUrl(ans.leftUrl) && isValidUrl(ans.rightUrl));
+    }
+    function completion(){ let complete=0; for(const p of pairs) if(validatePair(state.answers[p.id])) complete++; const pct=Math.round((complete/TOTAL_PAIRS)*100); return {complete,pct}; }
+    function firstIncompleteIndex(){ for(let i=0;i<pairs.length;i++){ const ans=state.answers[pairs[i].id]; if(!validatePair(ans)) return i; } return 0; }
+    function setAnswer(partial){ const id=pairs[state.currentIndex].id; state.answers[id]={ ...(state.answers[id]||defaultAnswer()), ...partial }; scheduleSave(); }
+    function setMeta(partial){ state.meta={...state.meta,...partial}; scheduleSave(); }
+    function clamp(n,min,max){ return Math.min(Math.max(n,min),max); }
+    function go(step){ const next=clamp(state.currentIndex+step,0,TOTAL_PAIRS-1); if(next===state.currentIndex) return; state.currentIndex=next; scheduleSave(); render(); }
+
+    const PLACEHOLDER_SVG='data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480"><rect width="640" height="480" fill="#f3f4f6"/><g fill="#9ca3af" font-family="system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial" text-anchor="middle"><text x="320" y="240" font-size="20">No image</text></g></svg>`);
+    const unescapeEntities=(s)=>(s||'').replace(/&amp;/g,'&');
+    function setImage(el,src){ const clean=unescapeEntities(src)||PLACEHOLDER_SVG; el.src=clean; el.onerror=()=>{ el.onerror=null; el.src=PLACEHOLDER_SVG; }; }
+    function prefetchNext(){ const nextIdx=state.currentIndex+1; if(nextIdx>=TOTAL_PAIRS) return; const p=pairs[nextIdx];
+      [p.left?.img,p.right?.img].forEach(u=>{ if(!u) return; const img=new Image(); img.referrerPolicy='no-referrer'; img.loading='eager'; img.src=unescapeEntities(u); });
+    }
+
+    function render(){
+      itemsView.classList.remove('hidden'); summaryView.classList.add('hidden'); navbar.classList.remove('hidden');
+
+      const hasAny=!!Object.keys(state.answers).length||!!state.meta.studentName||!!state.meta.date;
+      startResumeBtn.textContent=hasAny?'Resume':'Start';
+
+      studentNameInput.value=state.meta.studentName||''; workDateInput.value=state.meta.date||'';
+      const idx=state.currentIndex+1; const {complete,pct}=completion();
+      pairTitle.textContent=`Pair ${idx} of ${TOTAL_PAIRS}`;
+      progressTxt.textContent=`Pair ${idx} of ${TOTAL_PAIRS} • Completed ${complete} of ${TOTAL_PAIRS} • ${pct}% complete`;
+      progressBar.style.width=pct+'%';
+
+      const pair=pairs[state.currentIndex];
+      const current=state.answers[pair.id]||defaultAnswer();
+
+      capLeft.textContent=`${pair.left.emoji?pair.left.emoji+' ':''}${pair.left.title}`;
+      capRight.textContent=`${pair.right.emoji?pair.right.emoji+' ':''}${pair.right.title}`;
+      leftTitle.textContent=pair.left.title; rightTitle.textContent=pair.right.title;
+
+      setImage(imgLeft,pair.left.img); setImage(imgRight,pair.right.img);
+      imgLeft.alt=pair.left.title; imgRight.alt=pair.right.title;
+
+      const leftCard=document.querySelector('.choice[data-side="left"]');
+      const rightCard=document.querySelector('.choice[data-side="right"]');
+      const leftRadio=leftCard.querySelector('input[type="radio"]');
+      const rightRadio=rightCard.querySelector('input[type="radio"]');
+
+      leftRadio.checked=current.choice==='left'; rightRadio.checked=current.choice==='right';
+      leftCard.classList.toggle('selected',current.choice==='left'); rightCard.classList.toggle('selected',current.choice==='right');
+
+      leftPrice.value=current.leftPrice||'';
+      leftUrl.value=current.leftUrl||'';
+      rightPrice.value=current.rightPrice||'';
+      rightUrl.value=current.rightUrl||'';
+
+      inputsBlock.classList.toggle('inputs--hidden',!current.choice);
+
+      const pairValid=validatePair(current);
+      saveBtn.disabled=!pairValid; nextBtn.disabled=!pairValid;
+      // Last-step label
+      nextBtn.textContent = (state.currentIndex===TOTAL_PAIRS-1) ? 'Save & Summary' : 'Save & Next →';
+      prevBtn.disabled=state.currentIndex===0;
+
+      updateValidation(current,pair);
+      prefetchNext();
+    }
+
+    function updateValidation(ans,pair){
+      let msgs=[];
+      if(!ans.choice){ validationEl.className='validation validation--error'; validationEl.textContent='Select an item to enter prices and URLs.'; return; }
+      const lp=parsePrice(ans.leftPrice), rp=parsePrice(ans.rightPrice);
+      if(!lp) msgs.push(`Enter a valid non-negative price for “${pair.left.title}”.`);
+      if(!rp) msgs.push(`Enter a valid non-negative price for “${pair.right.title}”.`);
+      if(!isValidUrl(ans.leftUrl))  msgs.push(`Enter a valid URL for “${pair.left.title}”.`);
+      if(!isValidUrl(ans.rightUrl)) msgs.push(`Enter a valid URL for “${pair.right.title}”.`);
+
+      validationEl.textContent=''; validationEl.className='validation';
+      if(msgs.length){ validationEl.classList.add('validation--error'); validationEl.textContent=msgs.join(' '); }
+      else{ validationEl.classList.add('validation--ok'); validationEl.textContent='Looks good. You can Save or ' + ((state.currentIndex===TOTAL_PAIRS-1)?'Save & Summary.':'Save & Next.'); }
+    }
+
+    function renderSummary(){
+      itemsView.classList.add('hidden'); summaryView.classList.remove('hidden');
+      navbar.classList.add('hidden'); // hide footer on summary
+
+      summaryStudent.textContent=state.meta.studentName||'—';
+      summaryDate.textContent=state.meta.date||'—';
+
+      summaryList.innerHTML='';
+      for(let i=0;i<pairs.length;i++){
+        const p=pairs[i]; const id=p.id; const ans=state.answers[id]||defaultAnswer(); const valid=validatePair(ans);
+        const chosenLeft=ans.choice==='left', chosenRight=ans.choice==='right';
+        const el=document.createElement('div'); el.className='pair';
+        el.innerHTML=`
+          <p class="pair__title">Pair ${i+1} of ${TOTAL_PAIRS} ${valid?'':'<span style="color:var(--danger)">• Incomplete</span>'}</p>
+          <div class="pair__body">
+            <div class="item">
+              <div class="name">${chosenLeft?'<span class="chosen" aria-label="chosen">*</span>':''}${escapeHtml(p.left.title)}</div>
+              <div class="small">Price: ${formatMoney(parsePrice(ans.leftPrice))||'—'}</div>
+              <div class="small">URL: ${escapeHtml(ans.leftUrl)||'—'}</div>
+            </div>
+            <div class="item">
+              <div class="name">${chosenRight?'<span class="chosen" aria-label="chosen">*</span>':''}${escapeHtml(p.right.title)}</div>
+              <div class="small">Price: ${formatMoney(parsePrice(ans.rightPrice))||'—'}</div>
+              <div class="small">URL: ${escapeHtml(ans.rightUrl)||'—'}</div>
+            </div>
+          </div>`;
+        summaryList.appendChild(el);
+      }
+    }
+
+    function formatMoney(nStr){ if(!nStr) return ''; const n=Number(nStr); if(!Number.isFinite(n)) return ''; return n.toLocaleString(undefined,{style:'currency',currency:'USD'}); }
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+    startResumeBtn.addEventListener('click',()=>{ const target=firstIncompleteIndex(); state.currentIndex=clamp(target,0,TOTAL_PAIRS-1); scheduleSave(); render(); });
+    summaryBtn.addEventListener('click',renderSummary);
+    toItemsBtn?.addEventListener('click',render);
+    resetBtn.addEventListener('click',resetAll);
+    resetBtn2?.addEventListener('click',resetAll);
+
+    prevBtn.addEventListener('click',()=>go(-1));
+    saveBtn.addEventListener('click',()=>{ persist(); });
+    nextBtn.addEventListener('click',()=>{ persist(); if(state.currentIndex>=TOTAL_PAIRS-1) renderSummary(); else go(1); });
+
+    // Choice selection
+    choicesWrap.addEventListener('click',(e)=>{ const label=e.target.closest('.choice'); if(!label) return; const side=label.getAttribute('data-side'); if(side!=='left'&&side!=='right')return; setAnswer({choice:side}); render(); setTimeout(()=>{ (side==='left'?leftPrice:rightPrice).focus({preventScroll:true}); },0); });
+    choicesWrap.addEventListener('keydown',(e)=>{ if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight') return; e.preventDefault(); const curr=(state.answers[pairs[state.currentIndex].id]||defaultAnswer()).choice; const next=e.key==='ArrowLeft'?'left':'right'; if(curr!==next){ setAnswer({choice:next}); render(); } });
+    // Live validation + smart URL while typing
+    document.addEventListener('input',(e)=>{
+      const t=e.target; if(!(t instanceof HTMLInputElement)) return;
+      if(t===studentNameInput){ setMeta({studentName:t.value.trim()}); return; }
+      if(t===workDateInput){ setMeta({date:t.value}); return; }
+
+      const id=pairs[state.currentIndex].id; const curr=state.answers[id]||defaultAnswer();
+
+      if(t===leftPrice) setAnswer({leftPrice:t.value});
+      if(t===rightPrice) setAnswer({rightPrice:t.value});
+
+      if(t===leftUrl||t===rightUrl){
+        const normalized=normalizeUrlInput(t.value);
+        if(t===leftUrl) setAnswer({leftUrl:normalized}); else setAnswer({rightUrl:normalized});
+      }
+
+      const after=state.answers[id]||curr; const valid=validatePair(after);
+      updateValidation(after,pairs[state.currentIndex]); saveBtn.disabled=!valid; nextBtn.disabled=!valid;
+
+      const {complete,pct}=completion(); const idx=state.currentIndex+1;
+      progressTxt.textContent=`Pair ${idx} of ${TOTAL_PAIRS} • Completed ${complete} of ${TOTAL_PAIRS} • ${pct}% complete`;
+      progressBar.style.width=pct+'%';
+    });
+
+    // Blur: format price ONLY if digits present; normalize URL text in the field
+    document.addEventListener('blur',(e)=>{
+      const t=e.target; if(!(t instanceof HTMLInputElement)) return;
+
+      if(t===leftPrice||t===rightPrice){
+        const formatted=parsePrice(t.value);
+        if(formatted){ t.value=formatted; if(t===leftPrice) setAnswer({leftPrice:formatted}); else setAnswer({rightPrice:formatted}); }
+      }
+      if(t===leftUrl||t===rightUrl){
+        const normalized=normalizeUrlInput(t.value); if(normalized!==t.value) t.value=normalized;
+        if(t===leftUrl) setAnswer({leftUrl:normalized}); else setAnswer({rightUrl:normalized});
+        const after=state.answers[pairs[state.currentIndex].id]||defaultAnswer(); const valid=validatePair(after);
+        updateValidation(after,pairs[state.currentIndex]); saveBtn.disabled=!valid; nextBtn.disabled=!valid;
+      }
+    },true);
+    window.addEventListener('beforeunload',(e)=>{ try{ const json=JSON.stringify(state); if(json!==lastSavedJSON){ e.preventDefault(); e.returnValue=''; } }catch{} });
+
+    function init(){ safeLoad(); if(!state.meta.date){ const d=new Date(); const yyyy=d.getFullYear(), mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0'); state.meta.date=`${yyyy}-${mm}-${dd}`; } render(); }
+    document.addEventListener('DOMContentLoaded',init);
+  })();
+  </script>
+</body>
+</html>
